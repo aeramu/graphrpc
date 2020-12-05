@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package grpc;
+
+option go_package = "/proto";
+
+service GraphRPC {
+  rpc Exec(ExecRequest) returns (ExecResponse){}
+}
+
+message ExecRequest {
+  string query = 1;
+  string operationName = 2;
+  string variables = 3;
+}
+
+message ExecResponse {
+  string data = 1;
+  Error error = 2;
+}
+
+message Error {
+  string message = 1;
+  string path = 2;
+}
