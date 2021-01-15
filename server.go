@@ -3,11 +3,11 @@ package graphrpc
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/aeramu/graphrpc/proto"
 	"github.com/graph-gophers/graphql-go"
 	"github.com/graph-gophers/graphql-go/errors"
 	"google.golang.org/grpc"
-	"log"
 )
 
 type Server struct{
@@ -23,13 +23,13 @@ func NewGraphRPCServer(schema *graphql.Schema) *grpc.Server {
 
 func (h *Server) Exec(ctx context.Context, request *proto.ExecRequest) (*proto.ExecResponse, error) {
 	variables := map[string]interface{}{}
-	if err := json.Unmarshal([]byte(request.GetVariables()), &variables); err != nil {
+	if err := json.Unmarshal(request.GetVariables(), &variables); err != nil {
 		return nil, err
 	}
 
 	res := h.Schema.Exec(ctx, request.GetQuery(), request.GetOperationName(), variables)
 	return &proto.ExecResponse{
-		Data:  string(res.Data),
+		Data:  res.Data,
 		Errors: parseErrors(res.Errors),
 	}, nil
 }
@@ -57,12 +57,7 @@ func parseLocations(locations []errors.Location) (protoLocations []*proto.Locati
 
 func parsePath(path []interface{}) (protoPath []string) {
 	for _, p := range path {
-		b, err := json.Marshal(p)
-		if err != nil {
-			log.Println("failed marshal graphql error path:", err)
-			return nil
-		}
-		protoPath = append(protoPath, string(b))
+		protoPath = append(protoPath, fmt.Sprintf("%v", p))
 	}
 	return
 }

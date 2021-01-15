@@ -3,6 +3,7 @@ package graphrpc
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/aeramu/graphrpc/proto"
 	"google.golang.org/grpc"
 )
@@ -13,31 +14,52 @@ type Client struct {
 
 func NewGraphRPCClient(cc grpc.ClientConnInterface) *Client {
 	client := proto.NewGraphRPCClient(cc)
-	return &Client{client: client}
+	return &Client{
+		client: client,
+	}
 }
 
-func (c *Client) Exec(ctx context.Context, query string, variables map[string]interface{}) (*Response, error){
+func (c *Client) Exec(ctx context.Context, query string, variables map[string]interface{}) *Response {
 	b, err := json.Marshal(variables)
 	if err != nil {
-		return nil, err
+		return nil
 	}
 
 	res, err := c.client.Exec(ctx, &proto.ExecRequest{
 		Query:         query,
 		OperationName: "",
-		Variables:     string(b),
+		Variables:     b,
 	})
 	if err != nil {
-		return nil, err
+		return &Response{
+			Data:          nil,
+			GrpcError:     err,
+			GraphqlErrors: nil,
+		}
 	}
 
 	return &Response{
-		Data:   res.GetData(),
-		Errors: res.GetErrors(),
-	}, nil
+		Data:          res.GetData(),
+		GraphqlErrors: res.GetErrors(),
+		GrpcError:     nil,
+	}
 }
 
 type Response struct{
-	Data string
-	Errors []*proto.Error
+	Data          []byte
+	GrpcError     error
+	GraphqlErrors []*proto.Error
+}
+
+func (r Response) Consume(v interface{}) error {
+	if r.GrpcError != nil {
+		return r.GrpcError
+	}
+	if len(r.GraphqlErrors) > 0 {
+		return fmt.Errorf("%v", r.GraphqlErrors)
+	}
+	if err := json.Unmarshal(r.Data, &v); err != nil {
+		return err
+	}
+	return nil
 }

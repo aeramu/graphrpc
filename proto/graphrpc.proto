@@ -11,11 +11,11 @@ service GraphRPC {
 message ExecRequest {
   string query = 1;
   string operationName = 2;
-  string variables = 3;
+  bytes variables = 3;
 }
 
 message ExecResponse {
-  string data = 1;
+  bytes data = 1;
   repeated Error errors = 2;
 }
 
