@@ -3,7 +3,6 @@ package graphrpc
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"github.com/aeramu/graphrpc/proto"
 	"google.golang.org/grpc"
 )
@@ -32,5 +31,5 @@ func (c *Client) Exec(ctx context.Context, query string, variables map[string]in
 		return "", err
 	}
 
-	return res.GetData(), errors.New(res.GetError().Message)
+	return res.GetData(), nil
 }

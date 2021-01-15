@@ -3,8 +3,10 @@ package graphrpc
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/aeramu/graphrpc/proto"
 	"github.com/graph-gophers/graphql-go"
+	"github.com/graph-gophers/graphql-go/errors"
 	"google.golang.org/grpc"
 )
 
@@ -28,6 +30,16 @@ func (h *Server) Exec(ctx context.Context, request *proto.ExecRequest) (*proto.E
 	res := h.Schema.Exec(ctx, request.GetQuery(), request.GetOperationName(), variables)
 	return &proto.ExecResponse{
 		Data:  string(res.Data),
-		Error: nil,
+		Error: parseError(res.Errors),
 	}, nil
+}
+
+func parseError(errs []*errors.QueryError) (protoErrors []*proto.Error) {
+	for _, err := range errs {
+		protoErrors = append(protoErrors, &proto.Error{
+			Message: err.Message,
+			Path:    fmt.Sprintf("%v", err.Path),
+		})
+	}
+	return
 }

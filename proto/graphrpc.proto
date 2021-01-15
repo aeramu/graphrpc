@@ -16,7 +16,7 @@ message ExecRequest {
 
 message ExecResponse {
   string data = 1;
-  Error error = 2;
+  repeated Error error = 2;
 }
 
 message Error {
