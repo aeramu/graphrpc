@@ -3,7 +3,8 @@ package graphrpc
 import (
 	"context"
 	"encoding/json"
-	"fmt"
+	"errors"
+
 	"github.com/aeramu/graphrpc/proto"
 	"google.golang.org/grpc"
 )
@@ -19,47 +20,66 @@ func NewGraphRPCClient(cc grpc.ClientConnInterface) *Client {
 	}
 }
 
-func (c *Client) Exec(ctx context.Context, query string, variables map[string]interface{}) *Response {
-	b, err := json.Marshal(variables)
+func (c *Client) Exec(ctx context.Context, req Request) (*Response, error) {
+	if c == nil {
+		return nil, errors.New("client is nil")
+	}
+
+	if c.client == nil {
+		return nil, errors.New("grpc client is nil")
+	}
+
+	variables, err := json.Marshal(req.Variables)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 
 	res, err := c.client.Exec(ctx, &proto.ExecRequest{
-		Query:         query,
-		OperationName: "",
-		Variables:     b,
+		Query:         req.Query,
+		OperationName: req.OperationName,
+		Variables:     variables,
 	})
 	if err != nil {
-		return &Response{
-			Data:          nil,
-			GrpcError:     err,
-			GraphqlErrors: nil,
-		}
+		return nil, err
 	}
 
 	return &Response{
-		Data:          res.GetData(),
-		GraphqlErrors: res.GetErrors(),
-		GrpcError:     nil,
+		Data:   res.GetData(),
+		Errors: res.GetErrors(),
+	}, nil
+}
+
+func (c *Client) ExecQuery(ctx context.Context, query string) (*Response, error) {
+	req := Request{
+		Query:         query,
+		OperationName: "",
+		Variables:     nil,
+	}
+
+	res, err := c.Exec(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func (c *Client) WithQuery(query string) Request {
+	return Request{
+		Client: c,
+		Query:  query,
 	}
 }
 
-type Response struct{
-	Data          []byte
-	GrpcError     error
-	GraphqlErrors []*proto.Error
+func (c *Client) WithVariables(variables map[string]interface{}) Request {
+	return Request{
+		Client:    c,
+		Variables: variables,
+	}
 }
 
-func (r Response) Consume(v interface{}) error {
-	if r.GrpcError != nil {
-		return r.GrpcError
+func (c *Client) WithOperationName(operationName string) Request {
+	return Request{
+		Client:        c,
+		OperationName: operationName,
 	}
-	if len(r.GraphqlErrors) > 0 {
-		return fmt.Errorf("%v", r.GraphqlErrors)
-	}
-	if err := json.Unmarshal(r.Data, &v); err != nil {
-		return err
-	}
-	return nil
 }

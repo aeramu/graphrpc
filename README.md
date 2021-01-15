@@ -48,6 +48,7 @@ package main
 
 import (
     "context"
+    "log"
 
     "github.com/aeramu/graphrpc"
     "google.golang.org/grpc"
@@ -57,27 +58,37 @@ func main() {
     conn, _ := grpc.Dial("localhost:8000", grpc.WithInsecure())
     client := graphrpc.NewGraphRPCClient(conn)
 
-    res, err := client.Exec(context.Background(), `
-        {
-            film {
+    res, err := client.
+    	WithQuery(
+    	`query($id: ID!){
+            getFilm(id: $id) {
                 id
                 title
-                actors {
-                    id
-                    name
-                }
+                synopsis
+                rating
             }
-        }
-    `, nil)    	
+        }`).
+        ExecWithVariables(context.Background(), map[string]interface{}{
+            "id": "e7098dc0-b407-41e2-9a60-aca4c9638bea",
+        })  
+    if err != nil {
+    	log.Println(err)
+    	return
+    }
+    
+    var data Data
+    if err := res.Consume(&data); err != nil {
+    	log.Println(err)
+    	return
+    }
+    fmt.Println(data)  	
 }
 
 ```
 
 ## TODO
 - Testing
-- Handling error on client. How is the best?
-- Object Mapping (Response Consume function)
-- Graphql Variables (Is map[string]interface{} good?)
-- Exec Builder for client
+- Is API good enough? (Exec Request Builder)
+- Is it concurrency safe?
 - Add support to different GraphQL library(?) 
 (or maybe make another own)
