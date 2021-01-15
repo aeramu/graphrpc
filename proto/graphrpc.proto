@@ -16,10 +16,16 @@ message ExecRequest {
 
 message ExecResponse {
   string data = 1;
-  repeated Error error = 2;
+  repeated Error errors = 2;
 }
 
 message Error {
   string message = 1;
-  string path = 2;
+  repeated Location locations = 2;
+  repeated string path = 3;
+}
+
+message Location {
+  int32 line = 1;
+  int32 column = 2;
 }

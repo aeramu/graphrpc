@@ -1,5 +1,5 @@
 type Query {
-    getFilm(id: String!): Film
+    getFilm(id: ID!): Film
 }
 
 type Film {

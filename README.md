@@ -75,7 +75,7 @@ func main() {
 
 ## TODO
 - Testing
-- GraphQL Error (Error handling not implemented yet)
+- Handling error on client. How is the best?
 - Object Mapping (Response Consume function)
 - Graphql Variables (Is map[string]interface{} good?)
 - Exec Builder for client

@@ -3,11 +3,11 @@ package graphrpc
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/aeramu/graphrpc/proto"
 	"github.com/graph-gophers/graphql-go"
 	"github.com/graph-gophers/graphql-go/errors"
 	"google.golang.org/grpc"
+	"log"
 )
 
 type Server struct{
@@ -30,16 +30,39 @@ func (h *Server) Exec(ctx context.Context, request *proto.ExecRequest) (*proto.E
 	res := h.Schema.Exec(ctx, request.GetQuery(), request.GetOperationName(), variables)
 	return &proto.ExecResponse{
 		Data:  string(res.Data),
-		Error: parseError(res.Errors),
+		Errors: parseErrors(res.Errors),
 	}, nil
 }
 
-func parseError(errs []*errors.QueryError) (protoErrors []*proto.Error) {
+func parseErrors(errs []*errors.QueryError) (protoErrors []*proto.Error) {
 	for _, err := range errs {
 		protoErrors = append(protoErrors, &proto.Error{
 			Message: err.Message,
-			Path:    fmt.Sprintf("%v", err.Path),
+			Locations: parseLocations(err.Locations),
+			Path: parsePath(err.Path),
 		})
+	}
+	return
+}
+
+func parseLocations(locations []errors.Location) (protoLocations []*proto.Location) {
+	for _, location := range locations {
+		protoLocations = append(protoLocations, &proto.Location{
+			Line:   int32(location.Line),
+			Column: int32(location.Column),
+		})
+	}
+	return
+}
+
+func parsePath(path []interface{}) (protoPath []string) {
+	for _, p := range path {
+		b, err := json.Marshal(p)
+		if err != nil {
+			log.Println("failed marshal graphql error path:", err)
+			return nil
+		}
+		protoPath = append(protoPath, string(b))
 	}
 	return
 }
