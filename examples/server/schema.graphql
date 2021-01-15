@@ -1,0 +1,10 @@
+type Query {
+    getFilm(id: String!): Film
+}
+
+type Film {
+    id: ID!
+    title: String!
+    synopsis: String!
+    rating: Float!
+}
