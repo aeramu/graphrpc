@@ -17,6 +17,7 @@ Note: GraphRPC intended to extend
 handler over gRPC. GraphRPC need GraphQL resolver 
 implementation from it.
 ## Usages
+Complete example see ```examples``` folder
 ### Get Started
 ```bash
 go get -u github.com/aeramu/graphrpc
@@ -46,20 +47,22 @@ func main() {
 package main
 
 import (
+    "context"
+
     "github.com/aeramu/graphrpc"
     "google.golang.org/grpc"
 )
 
 func main() {
     conn, _ := grpc.Dial("localhost:8000", grpc.WithInsecure())
-    client := graphrpc.NewGrahRPCClient(conn)
+    client := graphrpc.NewGraphRPCClient(conn)
 
     res, err := client.Exec(context.Background(), `
         {
             film {
                 id
                 title
-                actor {
+                actors {
                     id
                     name
                 }
